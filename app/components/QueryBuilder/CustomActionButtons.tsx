@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useState, useMemo } from "react";
+import React, { forwardRef, useState, useMemo, useRef, useEffect } from "react";
 import type { DragHandleProps } from "react-querybuilder";
 import { fieldDefinitions } from "@/data/dummyUsers";
 import { dummyUsers } from "@/data/dummyUsers";
@@ -41,7 +41,7 @@ export const CustomFieldSelector = (props: any) => (
 export const CustomOperatorSelector = CustomFieldSelector;
 export const CustomCombinatorSelector = CustomFieldSelector;
 
-// ── Value Editor with Inline Dropdown Multi-Select (Perfect Mixpanel Alignment) ──
+// ── Value Editor with Inline Dropdown Multi-Select ───────────
 export const CustomValueEditor = (props: any) => {
   const { fieldData, value, handleOnChange, ...rest } = props;
 
@@ -76,6 +76,15 @@ export const CustomValueEditor = (props: any) => {
     const isAllChecked = selected.length === filteredValues.length && filteredValues.length > 0;
     const isIndeterminate = selected.length > 0 && selected.length < filteredValues.length;
 
+    // Fix: Use useRef + useEffect for indeterminate
+    const checkAllRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (checkAllRef.current) {
+        checkAllRef.current.indeterminate = isIndeterminate;
+      }
+    }, [isIndeterminate]);
+
     const toggleAll = () => {
       if (isAllChecked || isIndeterminate) {
         setSelected([]);
@@ -109,12 +118,12 @@ export const CustomValueEditor = (props: any) => {
         : `${selected.length} selected`;
 
     return (
-      <div className="relative inline-block w-full max-w-xs">
-        {/* Inline Trigger Button – Matches other selects exactly */}
+      <div className="relative inline-block w-full">
+        {/* Inline Trigger – Perfectly aligned with other inputs */}
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 transition"
+          className="inline-flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary transition"
         >
           <span className="truncate pr-2">{displayText}</span>
           <svg
@@ -155,8 +164,8 @@ export const CustomValueEditor = (props: any) => {
                   <label className="flex items-center gap-2 cursor-pointer text-sm">
                     <input
                       type="checkbox"
+                      ref={checkAllRef}
                       checked={isAllChecked}
-                      ref={(el) => el && (el.indeterminate = isIndeterminate)}
                       onChange={toggleAll}
                       className="rounded border-border text-primary focus:ring-primary"
                     />
@@ -167,7 +176,7 @@ export const CustomValueEditor = (props: any) => {
                 </div>
               )}
 
-              {/* List */}
+              {/* Options List */}
               <div className="max-h-64 overflow-y-auto">
                 {filteredValues.length === 0 ? (
                   <div className="px-4 py-6 text-center text-sm text-muted-foreground">
@@ -248,7 +257,6 @@ export const CustomValueEditor = (props: any) => {
     />
   );
 };
-
 
 // ── Add Filter Button with Flyout (Mixpanel-Style) ─────────────
 export const CustomAddRuleAction = ({ handleOnClick, context }: any) => {
