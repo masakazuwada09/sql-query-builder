@@ -22,6 +22,9 @@ export default function QueryBuilderPage() {
         <header className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">User Segmentation</h1>
           <p className="mt-3 text-muted-foreground">
+            a Task by Masakazu
+          </p>
+          <p className="mt-3 text-muted-foreground">
             Build filters like in Mixpanel • See live SQL and results
           </p>
         </header>

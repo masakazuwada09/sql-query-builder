@@ -1,122 +1,153 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { useCallback, memo } from "react";
-import {
-  RuleGroupType,
-  RuleType,
-  FullField,
-  FullOperator,
-  FullCombinator,
-  QueryBuilderProps,
-} from "react-querybuilder";
-
+import { memo, useState } from "react";
+import { RuleType, FullField } from "react-querybuilder";
 import { fieldDefinitions } from "@/data/dummyUsers";
 import {
   CustomFieldSelector,
   CustomOperatorSelector,
-  CustomCombinatorSelector,
   CustomValueEditor,
   CustomAddRuleAction,
-  CustomAddGroupAction,
   CustomRemoveRuleAction,
   CustomRemoveGroupAction,
   CustomDragHandle,
+  CustomAddGroupAction,
 } from "./CustomActionButtons";
 
 type UserRule = RuleType<string, string, any, string>;
-type UserRuleGroup = RuleGroupType<UserRule>;
 type UserField = FullField & { name: string; label: string };
-type UserOperator = FullOperator;
-type UserCombinator = FullCombinator;
 
-// Dynamically import QueryBuilder to avoid SSR issues with react-dnd
-const QueryBuilder = dynamic<
-  Partial<QueryBuilderProps<UserRuleGroup, UserField, UserOperator, UserCombinator>>
->(
-  () => import("react-querybuilder").then((mod) => mod.default),
-  { ssr: false }
-);
+// Dynamically import QueryBuilder for client-side
+const QueryBuilder = dynamic(() => import("./QueryBuilderWrapper"), {
+  ssr: false,
+});
 
-interface MixpanelQueryBuilderProps {
-  query: UserRuleGroup;
-  onQueryChange: (query: UserRuleGroup) => void;
-}
-
-// Make it a controlled component — query comes from parent
-export const MixpanelQueryBuilder = memo(function MixpanelQueryBuilder({
-  query,
-  onQueryChange,
-}: MixpanelQueryBuilderProps) {
-  const handleQueryChange = useCallback(
-    (newQuery: UserRuleGroup) => {
-      onQueryChange(newQuery);
-    },
-    [onQueryChange]
-  );
+export const MixpanelQueryBuilder = memo(({ query, onQueryChange }: any) => {
+  const [pendingField, setPendingField] = useState<string | null>(null);
 
   const fields: UserField[] = fieldDefinitions.map((f) => ({
     name: f.name,
     label: f.label,
     value: f.name,
-    inputType:
-      f.type === "number" ? "number" : f.type === "date" ? "date" : "text",
     dataType: f.type,
   }));
 
-  const getOperators = useCallback((fieldName: string) => {
-    const field = fieldDefinitions.find((f) => f.name === fieldName);
-    switch (field?.type) {
-      case "number":
-      case "date":
-        return ["=", "!=", ">", ">=", "<", "<="];
-      case "boolean":
-        return ["=", "!="];
-      default:
-        return ["=", "!=", "contains", "beginsWith", "endsWith"];
-    }
-  }, []);
-
-  const hasRules = query.rules.length > 0;
-
   return (
-    <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-      <DndProvider backend={HTML5Backend}>
+    <div className="flex flex-col gap-4">
+      {/* Main Query Card */}
+      <div className="rounded-xl border border-border bg-card p-6">
         <QueryBuilder
           query={query}
-          onQueryChange={handleQueryChange}
+          onQueryChange={onQueryChange}
           fields={fields}
-          getOperators={getOperators}
+          combinators={[
+            { name: "and", label: "AND" },
+            { name: "or", label: "OR" },
+          ]}
           controlElements={{
             fieldSelector: CustomFieldSelector,
             operatorSelector: CustomOperatorSelector,
-            combinatorSelector: CustomCombinatorSelector,
             valueEditor: CustomValueEditor,
-            addRuleAction: CustomAddRuleAction,
-            addGroupAction: CustomAddGroupAction,
+            addRuleAction: () => null,
             removeRuleAction: CustomRemoveRuleAction,
             removeGroupAction: CustomRemoveGroupAction,
             dragHandle: CustomDragHandle,
+            combinatorSelector: () => null,
+            addGroupAction: () => null,
           }}
-          // Optional: nicer default styling
-          showCloneButtons={false}
-          showNotToggle={false}
+          controlClassnames={{
+            rule: `flex items-center gap-2 rounded-lg px-2 py-2 transition-all duration-200 hover:bg-accent/40 [&.dndDragging]:bg-primary/10 [&.dndDragging]:ring-2 [&.dndDragging]:ring-primary [&.dndDragging]:shadow-lg [&.dndDragging]:scale-[1.02]`,
+            field: "min-w-[160px]",
+            operator: "min-w-[140px]",
+            value: "flex-1",
+          }}
+          context={{ setPendingField }}
         />
-      </DndProvider>
 
-      {!hasRules && (
-        <div className="mt-8 rounded-lg border-2 border-dashed border-border py-12 text-center">
-          <p className="text-lg font-medium text-foreground mb-2">
-            No filters applied yet
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Click <strong className="text-foreground">+ Rule</strong> or{" "}
-            <strong className="text-foreground">+ Group</strong> to add your first condition
-          </p>
+        {/* + Filter Flyout */}
+        <div className="mt-4">
+          <CustomAddRuleAction
+            onSelectField={(fieldName: string) => {
+              const newRule: UserRule = {
+                field: fieldName,
+                operator: "=",
+                value: "",
+              };
+              onQueryChange({
+                ...query,
+                rules: [...query.rules, newRule],
+              });
+            }}
+          />
         </div>
-      )}
+      </div>
+
+      {/* + Add Group Card */}
+      <div className="flex flex-col gap-4">
+        {query.groups?.map((group: any, i: number) => (
+          <div
+            key={i}
+            className="rounded-xl border border-border bg-card p-6 flex flex-col gap-4"
+          >
+            {/* Group AND/OR Switch */}
+            <div className="flex gap-2 items-center">
+              <span className="text-sm font-semibold">Combinator:</span>
+              <select
+                className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                value={group.combinator}
+                onChange={(e) => {
+                  const newGroups = [...query.groups];
+                  newGroups[i].combinator = e.target.value;
+                  onQueryChange({ ...query, groups: newGroups });
+                }}
+              >
+                <option value="and">AND</option>
+                <option value="or">OR</option>
+              </select>
+            </div>
+
+            {/* Group Rules */}
+            <QueryBuilder
+              query={group}
+              onQueryChange={(newGroup: any) => {
+                const newGroups = [...query.groups];
+                newGroups[i] = newGroup;
+                onQueryChange({ ...query, groups: newGroups });
+              }}
+              fields={fields}
+              combinators={[
+                { name: "and", label: "AND" },
+                { name: "or", label: "OR" },
+              ]}
+              controlElements={{
+                fieldSelector: CustomFieldSelector,
+                operatorSelector: CustomOperatorSelector,
+                valueEditor: CustomValueEditor,
+                addRuleAction: () => null,
+                removeRuleAction: CustomRemoveRuleAction,
+                removeGroupAction: CustomRemoveGroupAction,
+                dragHandle: CustomDragHandle,
+                combinatorSelector: () => null,
+                addGroupAction: () => null,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* + Add Group Action */}
+      <div>
+        <CustomAddGroupAction
+          handleOnClick={() => {
+            const newGroup = { combinator: "and", rules: [] };
+            onQueryChange({
+              ...query,
+              groups: [...(query.groups || []), newGroup],
+            });
+          }}
+        />
+      </div>
     </div>
   );
 });
