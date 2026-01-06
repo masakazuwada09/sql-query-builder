@@ -147,11 +147,12 @@ export const MixpanelQueryBuilder = memo(({ query, onQueryChange }: any) => {
         <div key={group.id}>
           <CombinatorSwitch
             value={group.combinator}
-            onChange={(c) => {
+            onChange={(c: "and" | "or") => {
               const next = structuredClone(query);
               next.groups[i].combinator = c;
               onQueryChange(next);
             }}
+
           />
 
           <GroupCard joined={group.combinator === "and"}>
