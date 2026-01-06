@@ -4,7 +4,6 @@ import React, { forwardRef, useState, useMemo } from "react";
 import type { DragHandleProps } from "react-querybuilder";
 import { fieldDefinitions, dummyUsers } from "@/data/dummyUsers";
 
-/* ─────────── Helpers ─────────── */
 function cleanProps(props: any) {
   const {
     testID,
@@ -29,24 +28,15 @@ function cleanProps(props: any) {
   return rest;
 }
 
-/* ─────────── Styled Select ─────────── */
 const StyledSelect = (props: any) => (
   <select
     {...cleanProps(props)}
-    className="
-      h-9 rounded-md border border-border bg-background px-3 text-sm
-      transition-all duration-200
-      focus:outline-none focus:ring-2 focus:ring-primary
-      group-[.dndDragging]:border-primary
-      group-[.dndDragging]:bg-primary/5
-      group-[.dndDragging]:shadow-sm
-    "
+    className="h-9 rounded-md border border-border bg-background px-3 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
   >
     {props.children}
   </select>
 );
 
-/* ─────────── Field / Operator / Combinator Selectors ─────────── */
 export const CustomFieldSelector = (props: any) => (
   <StyledSelect {...props}>
     {props.options?.map((opt: any, idx: number) => {
@@ -63,9 +53,7 @@ export const CustomFieldSelector = (props: any) => (
 );
 
 export const CustomOperatorSelector = CustomFieldSelector;
-export const CustomCombinatorSelector = CustomFieldSelector;
 
-/* ─────────── Value Editor ─────────── */
 export const CustomValueEditor = (props: any) => {
   const { fieldData, value, handleOnChange, ...rest } = props;
   const fieldName = fieldData?.name as keyof typeof dummyUsers[0];
@@ -121,8 +109,7 @@ export const CustomValueEditor = (props: any) => {
           onClick={() => setIsOpen(!isOpen)}
           className="h-9 px-3 rounded-md border border-border text-sm bg-background flex justify-between items-center"
         >
-          {displayText}
-          <span className="ml-2">▼</span>
+          {displayText} <span className="ml-2">▼</span>
         </button>
 
         {isOpen && (
@@ -188,14 +175,12 @@ export const CustomValueEditor = (props: any) => {
   );
 };
 
-/* ─────────── Actions ─────────── */
 export const CustomAddRuleAction = ({
   onSelectField,
 }: {
   onSelectField: (field: string) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   return (
     <div className="relative inline-block">
       <button
@@ -204,7 +189,6 @@ export const CustomAddRuleAction = ({
       >
         + Filter
       </button>
-
       {isOpen && (
         <div className="absolute z-50 mt-2 w-48 bg-background border border-border rounded shadow-lg">
           {fieldDefinitions.map((f) => (
