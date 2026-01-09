@@ -31,7 +31,7 @@ function cleanProps(props: any) {
 const StyledSelect = (props: any) => (
   <select
     {...cleanProps(props)}
-    className="h-9 rounded-md border border-border bg-background px-3 text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary"
+    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
   >
     {props.children}
   </select>
@@ -61,6 +61,22 @@ export const CustomValueEditor = (props: any) => {
   const multiSelectFields = ["distinctId", "name", "country", "plan"] as const;
   const isMulti = multiSelectFields.includes(fieldName as any);
 
+  if (fieldData?.dataType === "boolean") {
+    return (
+      <StyledSelect
+        {...rest}
+        value={value ?? ""}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+          handleOnChange(e.target.value || undefined)
+        }
+      >
+        <option value="">- any -</option>
+        <option value="true">True</option>
+        <option value="false">False</option>
+      </StyledSelect>
+    );
+  }
+
   if (isMulti) {
     const allValues = useMemo(() => {
       const set = new Set<string>();
@@ -77,10 +93,7 @@ export const CustomValueEditor = (props: any) => {
     const [search, setSearch] = useState("");
 
     const filtered = useMemo(
-      () =>
-        allValues.filter((v) =>
-          v.toLowerCase().includes(search.toLowerCase())
-        ),
+      () => allValues.filter((v) => v.toLowerCase().includes(search.toLowerCase())),
       [allValues, search]
     );
 
@@ -104,45 +117,52 @@ export const CustomValueEditor = (props: any) => {
         : `${selected.length} selected`;
 
     return (
-      <div className="relative flex flex-col gap-2 w-full">
+      <div className="relative w-full">
         <button
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="h-9 px-3 rounded-md border border-border text-sm bg-background flex justify-between items-center"
+          className="h-9 w-full px-3 rounded-md border border-border bg-background text-sm flex items-center justify-between hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-primary transition"
         >
-          {displayText} <span className="ml-2">▼</span>
+          <span className="truncate">{displayText}</span>
+          <span className="ml-2 text-muted-foreground">▼</span>
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 mt-1 w-full bg-background border border-border rounded shadow-lg">
+          <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-background border border-border rounded-md shadow-lg">
             <input
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="w-full px-3 py-2 border-b border-border focus:outline-none"
+              className="w-full px-3 py-2 border-b border-border text-sm focus:outline-none"
             />
-            <div className="max-h-48 overflow-y-auto">
-              {filtered.map((val) => (
-                <label
-                  key={val}
-                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(val)}
-                    onChange={() => toggleValue(val)}
-                  />
-                  {val}
-                </label>
-              ))}
+            <div className="max-h-60 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-muted-foreground">No options</div>
+              ) : (
+                filtered.map((val) => (
+                  <label
+                    key={val}
+                    className="flex items-center gap-2 px-3 py-1.5 hover:bg-accent/50 cursor-pointer text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(val)}
+                      onChange={() => toggleValue(val)}
+                      className="rounded border-border"
+                    />
+                    <span className="truncate">{val}</span>
+                  </label>
+                ))
+              )}
             </div>
-            <div className="flex justify-between px-3 py-2 border-t border-border">
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border">
               <span className="text-xs text-muted-foreground">
                 {selected.length} selected
               </span>
               <button
                 onClick={apply}
-                className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs"
+                className="px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-medium"
               >
                 Apply
               </button>
@@ -153,24 +173,15 @@ export const CustomValueEditor = (props: any) => {
     );
   }
 
-  const handleChange = (e: any) => handleOnChange?.(e.target.value || undefined);
-
-  if (fieldData?.dataType === "boolean") {
-    return (
-      <StyledSelect {...rest} value={value ?? ""} onChange={handleChange}>
-        <option value="">- any -</option>
-        <option value="true">True</option>
-        <option value="false">False</option>
-      </StyledSelect>
-    );
-  }
-
   return (
     <input
       {...cleanProps(rest)}
       value={value ?? ""}
-      onChange={handleChange}
-      className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+        handleOnChange(e.target.value || undefined)
+      }
+      className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+      placeholder="Enter value..."
     />
   );
 };
@@ -208,15 +219,6 @@ export const CustomAddRuleAction = ({
     </div>
   );
 };
-
-export const CustomAddGroupAction = ({ handleOnClick }: any) => (
-  <button
-    onClick={handleOnClick}
-    className="rounded-md border border-border px-4 py-1.5 text-sm"
-  >
-    + Group
-  </button>
-);
 
 export const CustomRemoveRuleAction = ({ handleOnClick }: any) => (
   <button onClick={handleOnClick} className="text-sm text-destructive">
